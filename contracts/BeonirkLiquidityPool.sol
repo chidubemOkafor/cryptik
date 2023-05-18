@@ -3,8 +3,9 @@
 pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract BeonirkLiquidityPool {
+contract BeonirkLiquidityPool is ERC20 {
     //state variables
     address public immutable I_tokenA;
     address public immutable I_tokenB;
@@ -14,12 +15,20 @@ contract BeonirkLiquidityPool {
     mapping(address => uint256) public reserve;
     mapping(address => uint256) public balance;
     mapping(address => uint256) public liquidityProviders;
+    mapping(address => uint256) public lpBalances;
 
     event liquidityAdded(
         address liquidityProvider,
         uint256 valueA,
         uint256 valueB
     );
+
+    event liquidityRemoved(
+        address liquidityRemover,
+        uint256 valueA,
+        uint256 valueB
+    );
+
     event tokenSwapped(
         address swapper,
         address tokenIn,
@@ -33,7 +42,7 @@ contract BeonirkLiquidityPool {
         address _tokenB,
         uint256 _initialA,
         uint256 _initialB
-    ) {
+    ) ERC20("poolToken", "ptk"){
         I_tokenA = _tokenA;
         I_tokenB = _tokenB;
         I_initialA = _initialA;
@@ -70,6 +79,38 @@ contract BeonirkLiquidityPool {
 
         reserve[I_tokenA] += _valueA;
         reserve[I_tokenB] += _valueB;
+        
+        //calculate the lp price to be minted
+        uint256 lpTokens = (totalSupply() * min(_valueA * reserve[I_tokenB], _valueB * reserve[I_tokenA])) / (reserve[I_tokenA] * reserve[I_tokenB]);
+
+        //mints the token
+        _mint(msg.sender, lpTokens);
+
+        // Update the liquidity provider's LP token balance
+        lpBalances[msg.sender] += lpTokens;
+        emit liquidityAdded(msg.sender,_valueA, _valueB);
+    }
+
+    function removeLiquidity(uint256 liquidity) external {
+        require(lpBalances[msg.sender] >= liquidity, "insufficient liquidity");
+        require(liquidity > 0, "invalid liquidity");
+
+        // Calculate the proportionate amounts of Token A and Token B to be returned
+        uint256 tokenAAmount = (liquidity * reserve[I_tokenA]) / totalSupply();
+        uint256 tokenBAmount = (liquidity * reserve[I_tokenB]) / totalSupply();
+
+        // this is where i subtract the liquidity amount and burn them
+        lpBalances[msg.sender] -= liquidity;
+        _burn(msg.sender, liquidity);
+
+        //transfer the tokens and update the reserve
+        IERC20(I_tokenA).transfer(msg.sender, tokenAAmount);
+        IERC20(I_tokenB).transfer(msg.sender, tokenBAmount);
+
+        // updating the reserve balance
+        reserve[I_tokenA] -= tokenAAmount;
+        reserve[I_tokenB] -= tokenBAmount;
+        emit liquidityRemoved(msg.sender, tokenAAmount, tokenBAmount);
     }
 
     function swap(
@@ -118,13 +159,8 @@ contract BeonirkLiquidityPool {
         return (reserve[I_tokenA], reserve[I_tokenB]);
     }
 
-    function removeLiquidity(uint256 liquidity) external {}
-
-    // this function is used to remove all liquidity provided by the liquidity provider
-    // function removeLiquidity(uint256 liquidityAmount) external {}
-
-    // // this function is used the calculate a token in the liquidity pool
-    // function calculatePrice(
-    //     address _token
-    // ) internal view returns (uint256 tokenBPrice) {}
+    //helper function
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+    return a < b ? a : b;
+}
 }
