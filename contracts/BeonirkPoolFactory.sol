@@ -56,7 +56,6 @@ contract BeonirkPoolFactory {
             new BeonirkLiquidityPool(
                 _tokenA,
                 _tokenB,
-                msg.sender,
                 initialA,
                 initialB
             )

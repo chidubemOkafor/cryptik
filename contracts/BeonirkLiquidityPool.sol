@@ -9,8 +9,6 @@ contract BeonirkLiquidityPool is ERC20 {
     //state variables
     address public immutable I_tokenA;
     address public immutable I_tokenB;
-    uint256 public immutable I_initialA;
-    uint256 public immutable I_initialB;
 
     mapping(address => uint256) public reserve;
     mapping(address => uint256) public balance;
@@ -45,9 +43,7 @@ contract BeonirkLiquidityPool is ERC20 {
     ) ERC20("poolToken", "ptk"){
         I_tokenA = _tokenA;
         I_tokenB = _tokenB;
-        I_initialA = _initialA;
-        I_initialB = _initialB;
-
+   
         // this adds the tokens to the pool
         reserve[_tokenA] += _initialA;
         reserve[_tokenB] += _initialB;
@@ -55,6 +51,7 @@ contract BeonirkLiquidityPool is ERC20 {
 
     // this function is used to add the liquidity to the liquidity pool
     function addLiquidity(uint256 _valueA, uint256 _valueB) external {
+        require(_valueA == _valueB,"the two tokens must have the same value");
         require(_valueA == _valueB, "Amount must be equal");
         require(_valueA > 0 && _valueB > 0, "Values must be greater than ");
         require(msg.sender != address(0));

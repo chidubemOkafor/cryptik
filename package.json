@@ -8,6 +8,7 @@
   "private": false,
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.3",
+    "dotenv": "^16.0.3",
     "hardhat": "^2.11.1"
   },
   "devDependencies": {
