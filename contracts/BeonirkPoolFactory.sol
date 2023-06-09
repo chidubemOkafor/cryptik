@@ -17,11 +17,6 @@ contract BeonirkPoolFactory {
         address LPoolAddress
     );
 
-    modifier onlyAdmin() {
-        require(Admin == msg.sender, "invalid right");
-        _;
-    }
-
     constructor() {
         Admin = msg.sender;
     }
@@ -48,6 +43,7 @@ contract BeonirkPoolFactory {
         require(!isPool(_tokenA, _tokenB), "pool already exists");
         require(tokenA.balanceOf(msg.sender) > initialA, "not enough tokenA");
         require(tokenB.balanceOf(msg.sender) > initialB, "not enough tokenB");
+        require(initialA == initialB, "not equal");
 
         (address token0, address token1) = _tokenA < _tokenB
             ? (_tokenA, _tokenB)
@@ -80,12 +76,6 @@ contract BeonirkPoolFactory {
         pools[token1][token0] = newliquidityPool;
         emit poolCreated(token0, token1, newliquidityPool);
         poolAddress = newliquidityPool;
-    }
-
-    // for assess control
-    // the functions is used to transfer the admin role
-    function transferOwnership(address _newAdmin) external onlyAdmin {
-        Admin = _newAdmin;
     }
 
     // getter functions
