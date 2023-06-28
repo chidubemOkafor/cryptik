@@ -33,7 +33,8 @@ contract BeonirkPoolFactory {
         address _tokenA,
         address _tokenB,
         uint256 initialA,
-        uint256 initialB
+        uint256 initialB,
+        address deployer
     ) external returns (address poolAddress) {
         IERC20 tokenA = IERC20(_tokenA);
         IERC20 tokenB = IERC20(_tokenB);
@@ -53,7 +54,8 @@ contract BeonirkPoolFactory {
                 _tokenA,
                 _tokenB,
                 initialA,
-                initialB
+                initialB,
+                deployer
             )
         );
 
@@ -76,6 +78,9 @@ contract BeonirkPoolFactory {
         pools[token1][token0] = newliquidityPool;
         emit poolCreated(token0, token1, newliquidityPool);
         poolAddress = newliquidityPool;
+
+        // Return the pool address
+        return poolAddress;
     }
 
     // getter functions

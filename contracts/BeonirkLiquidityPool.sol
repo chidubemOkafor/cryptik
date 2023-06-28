@@ -11,8 +11,8 @@ contract BeonirkLiquidityPool is ERC20 {
     address public immutable I_tokenB;
 
     mapping(address => uint256) public reserve;
-    mapping(address => uint256) public balance;
-    mapping(address => uint256) public liquidityProviders;
+    mapping(address => bool) public liquidityProviders;
+    address[] public liquidityProvidersArray;
     mapping(address => uint256) public lpBalances;
 
     event liquidityAdded(
@@ -39,11 +39,14 @@ contract BeonirkLiquidityPool is ERC20 {
         address _tokenA,
         address _tokenB,
         uint256 _initialA,
-        uint256 _initialB
+        uint256 _initialB,
+        address deployer
     ) ERC20("poolToken", "ptk"){
         I_tokenA = _tokenA;
         I_tokenB = _tokenB;
-   
+        liquidityProvidersArray.push(deployer);
+        liquidityProviders[deployer] = true;
+    
         // this adds the tokens to the pool
         reserve[_tokenA] += _initialA;
         reserve[_tokenB] += _initialB;
@@ -85,11 +88,19 @@ contract BeonirkLiquidityPool is ERC20 {
 
         // Update the liquidity provider's LP token balance
         lpBalances[msg.sender] += lpTokens;
+
+        // this sets the liquidity provider mapping to true if the liquidity provider has not provided liquidity before
+         if (!liquidityProviders[msg.sender]) {
+            liquidityProviders[msg.sender] = true;
+            liquidityProvidersArray.push(msg.sender);
+        }
         emit liquidityAdded(msg.sender,_valueA, _valueB);
     }
 
     function removeLiquidity(uint256 liquidity) external {
         require(lpBalances[msg.sender] >= liquidity, "insufficient liquidity");
+        // this checks if you're a liquidity provider before you can remove liquidity
+        require(liquidityProviders[msg.sender] == true, "you must be a liquidity provider to remove liquidity");
         require(liquidity > 0, "invalid liquidity");
 
         // Calculate the proportionate amounts of Token A and Token B to be returned
@@ -107,6 +118,12 @@ contract BeonirkLiquidityPool is ERC20 {
         // updating the reserve balance
         reserve[I_tokenA] -= tokenAAmount;
         reserve[I_tokenB] -= tokenBAmount;
+
+         if (lpBalances[msg.sender] == 0) {
+            liquidityProviders[msg.sender] = false;
+            removeLiquidityProvider(msg.sender);
+        }
+
         emit liquidityRemoved(msg.sender, tokenAAmount, tokenBAmount);
     }
 
@@ -156,8 +173,20 @@ contract BeonirkLiquidityPool is ERC20 {
         return (reserve[I_tokenA], reserve[I_tokenB]);
     }
 
-    //helper function
+    //====================helper functions==============================
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
     return a < b ? a : b;
-}
+    }
+    
+    function removeLiquidityProvider(address provider) internal {
+        for (uint256 i = 0; i < liquidityProvidersArray.length; i++) {
+            if (liquidityProvidersArray[i] == provider) {
+                if (i != liquidityProvidersArray.length - 1) {
+                    liquidityProvidersArray[i] = liquidityProvidersArray[liquidityProvidersArray.length - 1];
+                }
+                liquidityProvidersArray.pop();
+                break;
+            }
+        }
+    }
 }

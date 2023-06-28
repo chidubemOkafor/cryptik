@@ -46,7 +46,7 @@ describe("BeonirkPoolFactory", () => {
       await weth.connect(deployer2).approve(poolFactory.address, value);
 
        const LiquidityPool = await poolFactory.connect().createPool(weth.address, usdt.address, 200, 200);
-       const poolAddress = await poolFactory.getPool(usdt.address,weth.address)
+       const d = await poolFactory.getPool(usdt.address,weth.address)
        const BeonirkLiquidityPool = await ethers.getContractAt("BeonirkLiquidityPool",poolAddress)
         console.log(BeonirkLiquidityPool.address)
       // Assert the liquidity pool address
